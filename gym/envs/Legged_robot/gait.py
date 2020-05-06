@@ -1,8 +1,8 @@
 import numpy as np
 
 
-class gait:
-    def __int__(self, n_segment, offsets, durations, name):
+class Gait:
+    def __init__(self, n_segment, offsets, durations, name):
         self.name = name
 
         self.mpc_table = [None] * n_segment * 4
@@ -11,16 +11,53 @@ class gait:
         self.offsets = offsets
         self.durations = durations
         self.offsetsFloat = np.array(offsets) / n_segment
-        self.durations = np.array(durations) / n_segment
+        self.durationsFloat = np.array(durations) / n_segment
 
-        self.stance = durations[0]
-        self.swing = n_segment - durations[0]
+        # self.stance = durations[0]
+        # self.swing = n_segment - durations[0]
 
-        self.phase = 0.0
+        self.iteration = 0
+        self.phase = 0.0  # range(0,1)
 
     def get_contact_state(self):
-        progress = self.phase
+        progress = self.phase - self.offsetsFloat
 
-        cyclic = progress < 0  # cyclic is an array that has one on place where progress is less than zero
-        progress = progress + cyclic
+        for i in range(4):
+            if progress[i] < 0:
+                progress[i] += 1
+            if progress[i] > self.durationsFloat[i]:
+                progress[i] = 0.0
+            else:
+                progress[i] = progress[i] / self.durationsFloat[i]
+
+        return progress
+
+    def get_swing_state(self):
+        swing_offset = self.offsetsFloat + self.durationsFloat
+        swing_offset = swing_offset - (swing_offset > 1)  # minus one for item > 1
+        swing_duration = 1 - self.durationsFloat
+
+        progress = self.phase - swing_offset
+        progress = progress + (progress < 0)  # plus one for item < 0
+
+        for i in range(4):
+            if progress[i] > swing_duration[i]:
+                progress[i] = 0.0
+            else:
+                progress[i] = progress[i] / swing_duration[i]
+
+        return progress
+
+    def step(self):
+        if self.iteration == self.n_iteration:
+            self.iteration = 0
+        else:
+            self.iteration += 1
+        self.phase = self.iteration / self.n_iteration
+
+    def get_current_iteration(self):
+        return self.iteration
+
+    def get_current_phase(self):
+        return self.phase
 
