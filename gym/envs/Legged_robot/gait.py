@@ -5,7 +5,8 @@ class Gait:
     def __init__(self, n_segment, offsets, durations, name):
         self.name = name
 
-        self.mpc_table = [None] * n_segment * 4
+        self.stance = False
+
         self.n_iteration = n_segment
 
         self.offsets = offsets
@@ -19,7 +20,16 @@ class Gait:
         self.iteration = 0
         self.phase = 0.0  # range(0,1)
 
+        self.stance = durations[0]
+
+    def reset(self):
+        self.phase = 0
+        self.iteration = 0
+
     def get_contact_state(self):
+        if self.stance:
+            return [0.5, 0.5, 0.5, 0.5]
+
         progress = self.phase - self.offsetsFloat
 
         for i in range(4):
@@ -49,10 +59,9 @@ class Gait:
         return progress
 
     def step(self):
+        self.iteration += 1
         if self.iteration == self.n_iteration:
             self.iteration = 0
-        else:
-            self.iteration += 1
         self.phase = self.iteration / self.n_iteration
 
     def get_current_iteration(self):

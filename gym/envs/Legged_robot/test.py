@@ -29,4 +29,4 @@ def plt_current_contact(current_gait):
     plt.show()
 
 
-plt_current_contact(bounding)
+plt_current_contact(trotting)
