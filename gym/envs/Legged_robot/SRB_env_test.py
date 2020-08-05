@@ -1,3 +1,5 @@
+# TODO: Plot position with respect to time, to see how large the error will be (Stance)
+
 import gym.envs.Legged_robot.gait as gait
 import gym.envs.Legged_robot.Single_Rigid_body as SRB
 import numpy as np
