@@ -5,6 +5,8 @@ from gym.envs.mujoco import mujoco_env
 from gym import utils, spaces
 
 
+# ID of FR Feet is 13, ID of FL Feet is 21, ID of RR Feet is 29, ID of RL Feet is 37
+
 
 class aliengoEnv(utils.EzPickle):
     def __init__(self):
@@ -26,9 +28,16 @@ class aliengoEnv(utils.EzPickle):
 
         self.init_qpos = self.sim.data.qpos.ravel().copy()
         self.init_qvel = self.sim.data.qvel.ravel().copy()
-
-
         print("Initialize Aliengo Environment successfully!")
+
+    def _feet_contact(self):
+        feet_contact = []
+        for i in range(4):
+            if np.abs(self.sim.data.geom_xpos[13+8*i][2]) < 0.05:
+                feet_contact.append(True)
+            else:
+                feet_contact.append(False)
+        return feet_contact
 
     def _set_action_space(self):
         low = -np.inf
@@ -37,14 +46,17 @@ class aliengoEnv(utils.EzPickle):
 
     def _get_obs(self):
         data = self.sim.data
+        feet_contact = self._feet_contact()
         return np.concatenate([data.qpos.flat,
                                data.qvel.flat,
-                               self.des_vel])
+                               self.des_vel,
+                               feet_contact])
 
-    #def do_simulation(self, ctrl, n_frames):
+    def do_simulation(self, ctrl):
+
 
     def step(self, action):
-        self.do_simulation(action, self.frame_skip)
+        self.do_simulation(action)
 
     def viewer_setup(self):
         self.viewer.cam.trackbodyid = 1
