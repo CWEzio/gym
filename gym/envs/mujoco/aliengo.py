@@ -24,6 +24,7 @@ class aliengoEnv(utils.EzPickle):
         self.des_vel = [0, 0, 0]  # desired locomotion velocity, vx, vy, yaw_d
         self.roll_des = 0
         self.pitch_des = 0
+        self.height_des = 0.35
         self.dt = 0.002*30  # model's dt times f_ff update frequency
 
         self.rc = RobotCtrl_py.RobotControl()
@@ -39,6 +40,8 @@ class aliengoEnv(utils.EzPickle):
         self.init_qpos = self.sim.data.qpos.ravel().copy()
         self.init_qvel = self.sim.data.qvel.ravel().copy()
         print("Initialize Aliengo Environment successfully!")
+        print("init_qpos: ", self.init_qpos)
+        print("init_qvel: ", self.init_qvel)
 
         self.seed()
 
@@ -104,6 +107,67 @@ class aliengoEnv(utils.EzPickle):
         self.do_simulation()
         pos_after = self.sim.data.qpos[:3]
         rpy_after = quat_to_rpy(self.sim.data.qpos[3:7])
+        observation = self._get_obs()
+
+        done = (pos_after[2] < 0.1) or (rpy_after[0] > 0.8) or (rpy_after[1] > 0.8)
+
+        height = pos_after[2]
+        roll = rpy_after[0]
+        pitch = rpy_after[1]
+
+        vx = (pos_after[0] - pos_before[0]) / self.dt
+        vy = (pos_after[1] - pos_before[1]) / self.dt
+        yaw_d = (rpy_after[2] - rpy_before[2]) / self.dt
+
+        alive_bonus = 1
+
+        if np.abs(vx - self.des_vel[0]) <= 0.1:
+            v_x_reward = np.clip(0.01/np.abs(vx - self.des_vel[0] + 0.0001), 0, 1)
+        else:
+            v_x_reward = 0
+
+        if np.abs(vy - self.des_vel[1]) <= 0.1:
+            v_y_reward = np.clip(0.01/np.abs(vy - self.des_vel[1] + 0.0001), 0, 1)
+        else:
+            v_y_reward = 0
+
+        if np.abs(yaw_d - self.des_vel[2]) <= 0.05:
+            yaw_d_reward = np.clip(0.01/np.abs(yaw_d - self.des_vel[2] + 0.0001), 0, 1)
+        else:
+            yaw_d_reward = 0
+
+        if np.abs(height - self.height_des) <= 0.05:
+            height_reward = np.clip(0.01/np.abs(height - self.height_des + 0.0001), 0, 1)
+        else:
+            height_reward = 0
+
+        if np.abs(roll - self.roll_des) <= 0.1:
+            roll_reward = np.clip(0.01/np.abs(roll - self.roll_des + 0.0001), 0, 1)
+        else:
+            roll_reward = 0
+
+        if np.abs(pitch - self.pitch_des) <= 0.1:
+            pitch_reward = np.clip(0.01/np.abs(pitch - self.pitch_des + 0.0001), 0, 1)
+        else:
+            pitch_reward = 0
+
+        reward = alive_bonus + v_x_reward + v_y_reward + yaw_d_reward + 0.6*height_reward + 0.6*roll_reward + \
+                 0.6*pitch_reward
+
+        info = {
+            "position": pos_after,
+            "orientation": rpy_after,
+            "v_x_reward": v_x_reward,
+            "v_y_reward": v_y_reward,
+            "yaw_d_reward": yaw_d_reward,
+            "height_reward": height_reward,
+            "roll_reward": roll_reward,
+            "pitch_reward": pitch_reward
+        }
+
+        return observation, reward, done, info
+
+
 
     def viewer_setup(self):
         self.viewer.cam.trackbodyid = 1
