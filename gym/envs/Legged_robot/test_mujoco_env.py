@@ -1,7 +1,7 @@
 import gym
 import time
 
-env = gym.make("Humanoid-v2")
+env = gym.make("Hopper-v2")
 env.reset()
 
 
