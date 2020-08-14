@@ -4,20 +4,20 @@ import RobotCtrl_py
 import time
 from RobotCtrl_py import quat_to_rpy
 from gym.envs.mujoco import mujoco_env
-from gym import utils, spaces
+from gym import utils, spaces, Env
 from gym.utils import seeding
 
 
 # ID of FR Feet is 13, ID of FL Feet is 21, ID of RR Feet is 29, ID of RL Feet is 37
 
 
-class aliengoEnv(utils.EzPickle):
+class aliengoEnv(Env, utils.EzPickle):
     def __init__(self):
         model_path = "/home/chenwang/mujoco_aliengo/aliengo_description/xacro/aliengo5.xml"
         self.model = mujoco_py.load_model_from_path(model_path)
         self.sim = mujoco_py.MjSim(self.model)
-        # self.viewer = None
-        self.viewer = mujoco_py.MjViewer(self.sim)
+        self.viewer = None
+        # self.viewer = mujoco_py.MjViewer(self.sim)
         self.seed()
 
         utils.EzPickle.__init__(self)
@@ -106,7 +106,7 @@ class aliengoEnv(utils.EzPickle):
             ctrl = self.rc.run(data.qpos, data.qvel, data.qacc)
             data.ctrl[:12] = ctrl
             self.sim.step()
-            self.viewer.render()
+            # self.viewer.render()
 
     def step(self, action):
         pos_before = self.sim.data.qpos[:3]
