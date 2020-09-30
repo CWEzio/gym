@@ -574,6 +574,13 @@ for reward_type in ['sparse', 'dense']:
         max_episode_steps=100,
     )
 
+# Multi_agent
+# ----------------------------------------
+
+register(
+    id='PursuerEvader-v0',
+    entry_point='gym.envs.multi_agent:PursuitEvaderEnv',
+)
 # Atari
 # ----------------------------------------
 
