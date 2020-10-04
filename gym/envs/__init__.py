@@ -581,6 +581,11 @@ register(
     id='PursuerEvader-v0',
     entry_point='gym.envs.multi_agent:PursuitEvaderEnv',
 )
+
+register(
+    id='MAPursuerEvader-v0',
+    entry_point='gym.envs.multi_agent:MAPursuerEvaderEnv',
+)
 # Atari
 # ----------------------------------------
 
