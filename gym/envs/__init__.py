@@ -583,6 +583,11 @@ register(
 )
 
 register(
+    id='PursuerLevelZero-v0',
+    entry_point='gym.envs.multi_agent:PursuerLevelZero',
+)
+
+register(
     id='MAPursuerEvader-v0',
     entry_point='gym.envs.multi_agent:MAPursuerEvaderEnv',
 )
