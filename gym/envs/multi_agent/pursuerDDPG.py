@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# In this ddpg trained version, the action will not be mapped using tanh function
 
 import math
 import gym
@@ -20,7 +21,7 @@ metadata = {
 # Evader is still
 
 
-class PursuerLevelZero(gym.Env):
+class PursuerDDPG(gym.Env):
 
     def __init__(self):
         self.kinematics_integrator = 'euler'
@@ -71,7 +72,6 @@ class PursuerLevelZero(gym.Env):
 
     def step(self, action):
         assert action.shape == (2, 2)
-        action = np.clip(action, -1, 1)
         # Get state data
         # Get pursuers' and evader's params
         p1_x, p1_y, p2_x, p2_y, e_x, e_y = self.state[0]
@@ -103,8 +103,6 @@ class PursuerLevelZero(gym.Env):
         # Get New Distance
         new_distance = np.array([self._calc_distance(p1, e), self._calc_distance(p2, e)])
 
-        diff_distance = new_distance - last_distance
-
         self.state[0] = np.concatenate([p1, p2, e])
         self.state[1] = np.concatenate([p2, p1, e])
 
@@ -112,7 +110,7 @@ class PursuerLevelZero(gym.Env):
         done = success
 
         # print(distance_difference)
-        reward = -1000*diff_distance + 1e4 * success
+        reward = -new_distance + 1e5 * success
         # reward = -new_distance
         info = {}
 
@@ -204,7 +202,7 @@ class PursuerLevelZero(gym.Env):
 
 
 if __name__ == '__main__':
-    env = PursuerLevelZero()
+    env = PursuerDDPG()
     env.reset()
     no_collid_pos = np.array([50, 50])
     no_collid_pos, _ = env._check_wall_collision(no_collid_pos)

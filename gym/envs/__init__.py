@@ -588,6 +588,11 @@ register(
 )
 
 register(
+    id='PursuerDDPG-v0',
+    entry_point='gym.envs.multi_agent:PursuerDDPG',
+)
+
+register(
     id='MAPursuerEvader-v0',
     entry_point='gym.envs.multi_agent:MAPursuerEvaderEnv',
 )
