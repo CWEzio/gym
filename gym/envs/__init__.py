@@ -596,6 +596,11 @@ register(
     id='MAPursuerEvader-v0',
     entry_point='gym.envs.multi_agent:MAPursuerEvaderEnv',
 )
+
+register(
+    id='PursuerDiscrete-v0',
+    entry_point='gym.envs.multi_agent:PursuerDiscrete',
+)
 # Atari
 # ----------------------------------------
 

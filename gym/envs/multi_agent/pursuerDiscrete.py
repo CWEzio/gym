@@ -19,8 +19,9 @@ metadata = {
 
 # Evader is still
 
-
-class PursuerLevelZero(gym.Env):
+class PursuerDiscrete(gym.Env):
+    DISCRETE_NUM = 60
+    AVAIL_ANGLE = np.linspace(-np.pi, np.pi, DISCRETE_NUM)
 
     def __init__(self):
         self.kinematics_integrator = 'euler'
@@ -29,12 +30,9 @@ class PursuerLevelZero(gym.Env):
         # Pursuers Space
         obs_high = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 100.0])
         obs_low = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        action_high = np.array([1, 1])
-        action_low = np.array([-1, -1])
-        pursuer_action_space = spaces.Box(low=action_low, high=action_high)
         pursuer_observation_space = spaces.Box(low=obs_low, high=obs_high)
         self.observation_space = [pursuer_observation_space, pursuer_observation_space]
-        self.action_space = [pursuer_action_space, pursuer_action_space]
+        self.action_space = [spaces.Discrete(self.DISCRETE_NUM) for _ in range(2)]
 
         self.bound = [obs_low[0], obs_high[0]]
 
@@ -70,16 +68,17 @@ class PursuerLevelZero(gym.Env):
         return np.linalg.norm(pos1 - pos2)
 
     def step(self, action):
-        assert action.shape == (2, 2)
-        action = np.clip(action, -1, 1)
+
+        # Get action
+        p1_ang = self.AVAIL_ANGLE[action[0]]
+        p2_ang = self.AVAIL_ANGLE[action[1]]
+
+        p1_v = np.array([np.cos(p1_ang), np.sin(p1_ang)])
+        p2_v = np.array([np.cos(p2_ang), np.sin(p2_ang)])
+
         # Get state data
         # Get pursuers' and evader's params
         p1_x, p1_y, p2_x, p2_y, e_x, e_y = self.state[0]
-
-        # Get action
-        # print(self.state)
-        p1_v = action[0]
-        p2_v = action[1]
 
         # Pursuer running
         # Pursuer No.1
@@ -108,11 +107,11 @@ class PursuerLevelZero(gym.Env):
         self.state[0] = np.concatenate([p1, p2, e])
         self.state[1] = np.concatenate([p2, p1, e])
 
-        success = (self._calc_distance(p1, e) <= 2 or self._calc_distance(p2, e) <= 2)
+        success = (self._calc_distance(p1, e) <= 5 or self._calc_distance(p2, e) <= 5)
         done = success
 
         # print(distance_difference)
-        reward = -1000*diff_distance + 6e4 * success
+        reward = -1000*diff_distance + 1e4 * success
         # reward = -new_distance
         info = {}
 
@@ -165,17 +164,17 @@ class PursuerLevelZero(gym.Env):
             self.line3.set_color(0, 0, 0)
             self.line4.set_color(0, 0, 0)
 
-            self.pursuer1 = rendering.make_circle(2)
+            self.pursuer1 = rendering.make_circle(4)
             self.p1trans = rendering.Transform()
             self.pursuer1.add_attr(self.p1trans)
             self.pursuer1.set_color(0, 1, 0)
 
-            self.pursuer2 = rendering.make_circle(2)
+            self.pursuer2 = rendering.make_circle(4)
             self.p2trans = rendering.Transform()
             self.pursuer2.add_attr(self.p2trans)
             self.pursuer2.set_color(0, 1, 0)
 
-            self.evader = rendering.make_circle(2)
+            self.evader = rendering.make_circle(4)
             self.etrans = rendering.Transform()
             self.evader.add_attr(self.etrans)
             self.evader.set_color(0, 0, 1)
@@ -203,8 +202,33 @@ class PursuerLevelZero(gym.Env):
             self.viewer = None
 
 
+def replay(ac, max_ep_len=1000, num_episodes=100):
+    import torch
+    env = PursuerDiscrete()
+
+    # Reset o, r, d, ...
+    o, d, ep_len, n = env.reset(), False, 0, 0
+    p_1_o = o[0]
+    p_2_o = o[1]
+    while n < num_episodes:
+        env.render()
+        p_a_1 = ac.step(torch.as_tensor(p_1_o, dtype=torch.float32))
+        p_a_2 = ac.step(torch.as_tensor(p_2_o, dtype=torch.float32))
+
+        a = np.array([p_a_1, p_a_2])
+        o, r, d, _ = env.step(a)
+        ep_len += 1
+        p_1_o = o[0]
+        p_2_o = o[1]
+
+        if d or (ep_len == max_ep_len):
+            o, d, ep_len = env.reset(), False, 0
+            n += 1
+
+
+
 if __name__ == '__main__':
-    env = PursuerLevelZero()
+    env = PursuerDiscrete()
     env.reset()
     no_collid_pos = np.array([50, 50])
     no_collid_pos, _ = env._check_wall_collision(no_collid_pos)
@@ -233,7 +257,7 @@ if __name__ == '__main__':
     env.e_x = 100
     env.e_y = 100
     for _ in range(500):
-        o, r, d, _ = env.step(np.array([[1, 1], [1, 1]]))
+        o, r, d, _ = env.step([15, 15])
         if d:
             break
         env.render()
